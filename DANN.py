@@ -5,8 +5,8 @@ from math import sqrt
 
 class DANN(object):
     
-    def __init__(self, learning_rate = 0.05, hidden_layer_size = 25, lambda_adapt = 1, maxiter = 200,  epsilon_init = None, seed = 12342,
-                 verbose = False):
+    def __init__(self, learning_rate=0.05, hidden_layer_size=25, lambda_adapt=1., maxiter=200,  
+                 epsilon_init=None, seed=12342, verbose=False):
         """
         Domain Adversarial Neural Network for classification
         
@@ -53,7 +53,7 @@ class DANN(object):
         if self.epsilon_init is not None:
             epsilon = self.epsilon_init 
         else:
-            epsilon = sqrt( 6.0 / (l_in + l_out))
+            epsilon = sqrt(6.0 / (l_in + l_out))
             
         return epsilon * (2 * np.random.rand(l_out, l_in) - 1.0)
        
@@ -65,15 +65,16 @@ class DANN(object):
                   X : Source data matrix 
                   Y : Source labels
                   X_adapt : Target data matrix
-                  (X_valid, Y_valid) = validation set used for early stopping.
-                  do_random_init = A boolean indicating whether to us random initialization or not.
+                  (X_valid, Y_valid) : validation set used for early stopping.
+                  do_random_init : A boolean indicating whether to use random initialization or not.
         """
         
         nb_examples, nb_features = np.shape(X)
         nb_labels = len(set(Y))
         nb_examples_adapt, _ = np.shape(X_adapt)
         
-        if self.verbose: print(self.__dict__)
+        if self.verbose: 
+            print(self.__dict__)
         
         np.random.seed(self.seed)
         
@@ -90,9 +91,8 @@ class DANN(object):
         best_valid_risk = 2.0
         continue_until = 30
 
-        
-        for t in xrange(self.maxiter):
-            for i in xrange(nb_examples):
+        for t in range(self.maxiter):
+            for i in range(nb_examples):
                 x_t, y_t = X[i,:], Y[i]
                 
                 hidden_layer = self.sigmoid( np.dot(W, x_t) + b )
@@ -114,7 +114,7 @@ class DANN(object):
                     
                     delta_d = self.lambda_adapt * (1. - gho_x_t) 
                     delta_w = delta_d * hidden_layer 
-                    tmp = delta_d * w * hidden_layer * (1.-hidden_layer)# produit element par element
+                    tmp = delta_d * w * hidden_layer * (1.-hidden_layer) 
         
                     delta_b += tmp
                     delta_W += tmp.reshape(-1,1) * x_t.reshape(1,-1)
@@ -142,7 +142,7 @@ class DANN(object):
                 
                 w += delta_w * self.learning_rate 
                 d += delta_d * self.learning_rate 
-            # END for i in xrange(nb_examples)
+            # END for i in range(nb_examples)
             
             self.W, self.V, self.b, self.c, self.w, self.d = W, V, b, c, w, d
             
@@ -151,15 +151,17 @@ class DANN(object):
                 valid_pred = self.predict(X_valid)
                 valid_risk = np.mean( valid_pred != Y_valid )
                 if valid_risk <= best_valid_risk:
-                    if self.verbose: print '[best valid risk so far]', (t, valid_risk)
+                    if self.verbose: 
+                        print('[best valid risk so far] %f (iter %d)' % (valid_risk, t))
                     best_valid_risk = valid_risk
                     best_weights = (W.copy(), V.copy(), b.copy(), c.copy())
                     best_t = t
                     continue_until = max(continue_until, int(1.5*t))
                 elif t > continue_until: 
-                    if self.verbose: print '[early stop]', t
+                    if self.verbose: 
+                        print('[early stop] iter %d' % t)
                     break
-        # END for t in xrange(self.maxiter)
+        # END for t in range(self.maxiter)
         
         if X_valid is not None:
             self.W, self.V, self.b, self.c = best_weights
@@ -169,12 +171,12 @@ class DANN(object):
             self.nb_iter = self.maxiter
             self.valid_risk = 2.
             
-        if self.verbose: print '[final answer]', (self.nb_iter, self.valid_risk)   
+        if self.verbose: 
+            print('[final valid risk] %f (iter %d)' % (valid_risk, t))   
 
     def forward(self, X):
         """
-         Computes and return the outputs for X :
-         the outputs should be a 2D array of size len(X) by len(set(Y)).
+         Compute and return the network outputs for X, i.e., a 2D array of size len(X) by len(set(Y)).
          the ith row of the array contains output probabilities for each class for the ith example.
          
         """
@@ -184,12 +186,10 @@ class DANN(object):
 
     def predict(self, X):
         """
-         Computes and return the outputs for X :
-         the outputs should be an array of size len(X).
+         Compute and return the label predictions for X, i.e., a 1D array of size len(X).
          the ith row of the array contains the predicted class for the ith example .
         """
         output_layer = self.forward(X)
         return np.argmax(output_layer, 0)
  
         
- 

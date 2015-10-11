@@ -1,10 +1,9 @@
 import numpy as np
-from sklearn import svm
 
 def mDA(X, noise, eta):
     """
     inputs: 
-         X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
+        X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
         noise: corruption level
         eta: regularization 
     
@@ -65,10 +64,11 @@ def mSDA(X, noise, nb_layers, verbose=False):
 
     return allhx, W_list
 
+
 def mSDA_forward(X, W_list):
     """
     inputs: 
-         X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
+        X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
         noise: corruption level
         W_list: list of mapping (of size nb_layers) learned by mSDA.
     
