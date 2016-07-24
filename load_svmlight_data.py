@@ -23,7 +23,7 @@ def load_amazon(source_name, target_name, data_folder=None):
 
     source_file = data_folder + source_name + '_train.svmlight'
     target_file = data_folder + target_name + '_train.svmlight'
-    test_file = data_folder + source_name + '_test.svmlight'
+    test_file = data_folder + target_name + '_test.svmlight'
 
     xs, ys, xt, yt, xtest, ytest = load_svmlight_files([source_file, target_file, test_file])
 
