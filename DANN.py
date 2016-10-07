@@ -119,7 +119,7 @@ class DANN(object):
                     delta_b += tmp
                     delta_W += tmp.reshape(-1,1) * x_t.reshape(1,-1)
                     
-                    # add domain adaptation regularizer from current domain
+                    # add domain adaptation regularizer from other domain
                     t_2 = np.random.randint(nb_examples_adapt)
                     i_2 = t_2 % nb_examples_adapt
                     x_t_2 = X_adapt[i_2,:]
