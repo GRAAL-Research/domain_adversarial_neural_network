@@ -3,7 +3,7 @@ import numpy as np
 def mDA(X, noise, eta):
     """
     inputs: 
-        X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
+        X : d x n input (Transpose of the usual data-matrix)
         noise: corruption level
         eta: regularization 
     
@@ -14,13 +14,13 @@ def mDA(X, noise, eta):
     d, n = np.shape(X)
     
     # adding bias
-    Xb = np.vstack(( X, np.ones(n)))
+    Xb = np.vstack((X, np.ones(n)))
     
     # scatter matrix S
     S = np.dot(Xb, Xb.T)
     
     # corruption vector
-    q = np.ones( (d+1, 1) )*(1.-noise)
+    q = np.ones((d+1, 1)) * (1.-noise)
     q[-1] = 1
     
     # Q: (d+1)x(d+1)
@@ -42,7 +42,7 @@ def mDA(X, noise, eta):
 def mSDA(X, noise, nb_layers, verbose=False):
     """
     inputs:
-        X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
+        X : d x n input Transpose of the usual data-matrix)
         noise: corruption level
         nb_layers: number of layers to stack
 
@@ -56,10 +56,10 @@ def mSDA(X, noise, nb_layers, verbose=False):
     W_list = []
     
     for i in range(nb_layers):
-        if verbose: print 'layer =', i
+        if verbose: print('layer =', i)
         newhx, W = mDA(prevhx, noise, eta)
         W_list.append(W)
-        allhx = np.vstack( (allhx, newhx) )
+        allhx = np.vstack((allhx, newhx))
         prevhx = newhx
 
     return allhx, W_list
@@ -68,7 +68,7 @@ def mSDA(X, noise, nb_layers, verbose=False):
 def mSDA_forward(X, W_list):
     """
     inputs: 
-        X : d x n input (TRANSPOSE DE LA DATA-MATRICE HABITUELLE)
+        X : d x n input (Transpose of the usual data-matrix)
         noise: corruption level
         W_list: list of mapping (of size nb_layers) learned by mSDA.
     

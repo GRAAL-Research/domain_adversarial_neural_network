@@ -7,7 +7,7 @@ from math import sqrt
 class DANN(object):
     
     def __init__(self, learning_rate=0.05, hidden_layer_size=25, lambda_adapt=1., maxiter=200,  
-                 epsilon_init=None, seed=12342, verbose=False):
+                 epsilon_init=None, adversarial_representation=True, seed=12342, verbose=False):
         """
         Domain Adversarial Neural Network for classification
         
@@ -26,6 +26,7 @@ class DANN(object):
         self.lambda_adapt = lambda_adapt
         self.epsilon_init = epsilon_init
         self.learning_rate = learning_rate
+        self.adversarial_representation = adversarial_representation
         self.seed = seed
         self.verbose = verbose
             
@@ -113,12 +114,13 @@ class DANN(object):
                     
                     delta_d = self.lambda_adapt * (1. - gho_x_t) 
                     delta_w = delta_d * hidden_layer 
-                    tmp = delta_d * w * hidden_layer * (1.-hidden_layer) 
-        
-                    delta_b += tmp
-                    delta_W += tmp.reshape(-1,1) * x_t.reshape(1,-1)
+
+                    if self.adversarial_representation:
+                        tmp = delta_d * w * hidden_layer * (1. - hidden_layer)
+                        delta_b += tmp
+                        delta_W += tmp.reshape(-1,1) * x_t.reshape(1,-1)
                     
-                    # add domain adaptation regularizer from current domain
+                    # add domain adaptation regularizer from other domain
                     t_2 = np.random.randint(nb_examples_adapt)
                     i_2 = t_2 % nb_examples_adapt
                     x_t_2 = X_adapt[i_2, :]
@@ -126,12 +128,12 @@ class DANN(object):
                     gho_x_t_2 = self.sigmoid( np.dot(w.T,hidden_layer_2) + d) 
                     
                     delta_d -= self.lambda_adapt * gho_x_t_2 
-                    delta_w -= self.lambda_adapt * gho_x_t_2 * hidden_layer_2 
-    
-                    tmp = -self.lambda_adapt * gho_x_t_2 * w * hidden_layer_2 * (1. - hidden_layer_2)
-                    
-                    delta_b += tmp
-                    delta_W += tmp.reshape(-1,1) * x_t_2.reshape(1,-1)  
+                    delta_w -= self.lambda_adapt * gho_x_t_2 * hidden_layer_2
+
+                    if self.adversarial_representation:
+                        tmp = -self.lambda_adapt * gho_x_t_2 * w * hidden_layer_2 * (1. - hidden_layer_2)
+                        delta_b += tmp
+                        delta_W += tmp.reshape(-1,1) * x_t_2.reshape(1,-1)
           
                 W -= delta_W * self.learning_rate
                 b -= delta_b * self.learning_rate
@@ -170,18 +172,22 @@ class DANN(object):
             self.nb_iter = self.maxiter
             self.valid_risk = 2.
             
-        if self.verbose: 
-            print('[final valid risk] %f (iter %d)' % (valid_risk, t))   
-
     def forward(self, X):
         """
          Compute and return the network outputs for X, i.e., a 2D array of size len(X) by len(set(Y)).
          the ith row of the array contains output probabilities for each class for the ith example.
          
         """
-        hidden_layer = self.sigmoid( np.dot(self.W, X.T) + self.b[:,np.newaxis] )
-        output_layer = self.softmax( np.dot(self.V, hidden_layer) + self.c[:,np.newaxis]  )
+        hidden_layer = self.sigmoid(np.dot(self.W, X.T) + self.b[:,np.newaxis])
+        output_layer = self.softmax(np.dot(self.V, hidden_layer) + self.c[:,np.newaxis])
         return output_layer
+
+    def hidden_representation(self, X):
+        """
+         Compute and return the network hidden layer values for X.
+        """
+        hidden_layer = self.sigmoid(np.dot(self.W, X.T) + self.b[:,np.newaxis])
+        return hidden_layer.T
 
     def predict(self, X):
         """
@@ -190,5 +196,13 @@ class DANN(object):
         """
         output_layer = self.forward(X)
         return np.argmax(output_layer, 0)
- 
+
+    def predict_domain(self, X):
+        """
+         Compute and return the domain predictions for X, i.e., a 1D array of size len(X).
+         the ith row of the array contains the predicted domain (0 or 1) for the ith example.
+        """
+        hidden_layer = self.sigmoid(np.dot(self.W, X.T) + self.b[:, np.newaxis])
+        output_layer = self.sigmoid(np.dot(self.w, hidden_layer) + self.d)
+        return np.array(output_layer < .5, dtype=int)
         
