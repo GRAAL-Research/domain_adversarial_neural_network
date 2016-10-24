@@ -41,21 +41,21 @@ def main():
     algo.fit(X, y, Xt)
 
     pyplot.subplot(2, 4, 5)
-    pyplot.title("NN: Label classification")
+    pyplot.title("DANN: Label classification")
     draw_trans_data(X, y, Xt, algo.predict,  special_points=special_points,
                     special_xytext=[(50,-15), (-20,-90), (-50,40), (-80,0)] )
 
     pyplot.subplot(2, 4, 6)
-    pyplot.title("NN: Representation PCA")
+    pyplot.title("DANN: Representation PCA")
     run_pca(X, y, Xt, algo, special_points=special_points, mult=[-1,1],
             special_xytext=[(-10,-80), (50,-60), (-40,50), (-20,70)])
 
     pyplot.subplot(2, 4, 7)
-    pyplot.title("NN: Domain classification")
+    pyplot.title("DANN: Domain classification")
     draw_trans_data(X, y, Xt, algo.predict_domain, colormap_index=1)
 
     pyplot.subplot(2, 4, 8)
-    pyplot.title("NN: Hidden neurons")
+    pyplot.title("DANN: Hidden neurons")
     draw_trans_data(X, y, Xt, neurons_to_draw=(algo.W, algo.b))
 
     pyplot.show()
