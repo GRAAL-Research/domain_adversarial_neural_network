@@ -18,6 +18,9 @@ class DANN(object):
         option "epsilon_init" is a term used for initialization.
                 if "None" the weight matrices are weighted by 6/(sqrt(r+c)) 
                 (where r and c are the dimensions of the weight matrix)
+        option "adversarial_representation": if False, the adversarial classifier is trained
+                but has no impact on the hidden layer representation. The label predictor is
+                then the same as a standard neural-network one (see experiments_moon.py figures). 
         option "seed" is the seed of the random number generator.
         """
         
@@ -83,10 +86,10 @@ class DANN(object):
             V = self.random_init(self.hidden_layer_size, nb_labels)
             b = np.zeros(self.hidden_layer_size)
             c = np.zeros(nb_labels)
-            w = np.zeros(self.hidden_layer_size)
+            U = np.zeros(self.hidden_layer_size)
             d = 0.
         else:
-            W, V, b, c, w, d = self.W, self.V, self.b, self.c, self.w, self.d 
+            W, V, b, c, U, d = self.W, self.V, self.b, self.c, self.U, self.d 
             
         best_valid_risk = 2.0
         continue_until = 30
@@ -107,16 +110,16 @@ class DANN(object):
                 delta_W = np.dot(delta_b.reshape(-1,1), x_t.reshape(1,-1)) 
                 
                 if self.lambda_adapt == 0. :
-                    delta_w, delta_d = 0., 0.
+                    delta_U, delta_d = 0., 0.
                 else:
                     # add domain adaptation regularizer from current domain
-                    gho_x_t = self.sigmoid(np.dot(w.T,hidden_layer) + d)
+                    gho_x_t = self.sigmoid(np.dot(U.T, hidden_layer) + d)
                     
                     delta_d = self.lambda_adapt * (1. - gho_x_t) 
-                    delta_w = delta_d * hidden_layer 
+                    delta_U = delta_d * hidden_layer 
 
                     if self.adversarial_representation:
-                        tmp = delta_d * w * hidden_layer * (1. - hidden_layer)
+                        tmp = delta_d * U * hidden_layer * (1. - hidden_layer)
                         delta_b += tmp
                         delta_W += tmp.reshape(-1,1) * x_t.reshape(1,-1)
                     
@@ -125,13 +128,13 @@ class DANN(object):
                     i_2 = t_2 % nb_examples_adapt
                     x_t_2 = X_adapt[i_2, :]
                     hidden_layer_2 = self.sigmoid( np.dot(W, x_t_2) + b)
-                    gho_x_t_2 = self.sigmoid( np.dot(w.T,hidden_layer_2) + d) 
+                    gho_x_t_2 = self.sigmoid(np.dot(U.T, hidden_layer_2) + d) 
                     
                     delta_d -= self.lambda_adapt * gho_x_t_2 
-                    delta_w -= self.lambda_adapt * gho_x_t_2 * hidden_layer_2
+                    delta_U -= self.lambda_adapt * gho_x_t_2 * hidden_layer_2
 
                     if self.adversarial_representation:
-                        tmp = -self.lambda_adapt * gho_x_t_2 * w * hidden_layer_2 * (1. - hidden_layer_2)
+                        tmp = -self.lambda_adapt * gho_x_t_2 * U * hidden_layer_2 * (1. - hidden_layer_2)
                         delta_b += tmp
                         delta_W += tmp.reshape(-1,1) * x_t_2.reshape(1,-1)
           
@@ -141,11 +144,11 @@ class DANN(object):
                 V -= delta_V * self.learning_rate
                 c -= delta_c * self.learning_rate
                 
-                w += delta_w * self.learning_rate 
+                U += delta_U * self.learning_rate 
                 d += delta_d * self.learning_rate 
             # END for i in range(nb_examples)
-            
-            self.W, self.V, self.b, self.c, self.w, self.d = W, V, b, c, w, d
+
+            self.W, self.V, self.b, self.c, self.U, self.d = W, V, b, c, U, d
             
             # early stopping
             if X_valid is not None:
@@ -203,6 +206,6 @@ class DANN(object):
          the ith row of the array contains the predicted domain (0 or 1) for the ith example.
         """
         hidden_layer = self.sigmoid(np.dot(self.W, X.T) + self.b[:, np.newaxis])
-        output_layer = self.sigmoid(np.dot(self.w, hidden_layer) + self.d)
+        output_layer = self.sigmoid(np.dot(self.U, hidden_layer) + self.d)
         return np.array(output_layer < .5, dtype=int)
-        
+
