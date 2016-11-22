@@ -14,9 +14,10 @@ class DANN(object):
         option "learning_rate" is the learning rate of the neural network.
         option "hidden_layer_size" is the hidden layer size.
         option "lambda_adapt" weights the domain adaptation regularization term.
+                if 0 or None or False, then no domain adaptation regularization is performed
         option "maxiter" number of training iterations.
         option "epsilon_init" is a term used for initialization.
-                if "None" the weight matrices are weighted by 6/(sqrt(r+c)) 
+                if None the weight matrices are weighted by 6/(sqrt(r+c))
                 (where r and c are the dimensions of the weight matrix)
         option "adversarial_representation": if False, the adversarial classifier is trained
                 but has no impact on the hidden layer representation. The label predictor is
@@ -26,7 +27,7 @@ class DANN(object):
         
         self.hidden_layer_size = hidden_layer_size
         self.maxiter = maxiter
-        self.lambda_adapt = lambda_adapt
+        self.lambda_adapt = lambda_adapt if lambda_adapt not in (None, False) else 0.
         self.epsilon_init = epsilon_init
         self.learning_rate = learning_rate
         self.adversarial_representation = adversarial_representation
@@ -76,8 +77,8 @@ class DANN(object):
         nb_labels = len(set(Y))
         nb_examples_adapt, _ = np.shape(X_adapt)
 
-        if self.verbose: 
-            print(self.__dict__)
+        if self.verbose:
+            print('[DANN parameters]', self.__dict__)
         
         np.random.seed(self.seed)
         
@@ -109,7 +110,7 @@ class DANN(object):
                 delta_b = np.dot(V.T, delta_c) * hidden_layer * (1.-hidden_layer) 
                 delta_W = np.dot(delta_b.reshape(-1,1), x_t.reshape(1,-1)) 
                 
-                if self.lambda_adapt == 0. :
+                if self.lambda_adapt == 0.:
                     delta_U, delta_d = 0., 0.
                 else:
                     # add domain adaptation regularizer from current domain
@@ -156,14 +157,14 @@ class DANN(object):
                 valid_risk = np.mean( valid_pred != Y_valid )
                 if valid_risk <= best_valid_risk:
                     if self.verbose: 
-                        print('[best valid risk so far] %f (iter %d)' % (valid_risk, t))
+                        print('[DANN best valid risk so far] %f (iter %d)' % (valid_risk, t))
                     best_valid_risk = valid_risk
                     best_weights = (W.copy(), V.copy(), b.copy(), c.copy())
                     best_t = t
                     continue_until = max(continue_until, int(1.5*t))
                 elif t > continue_until: 
                     if self.verbose: 
-                        print('[early stop] iter %d' % t)
+                        print('[DANN early stop] iter %d' % t)
                     break
         # END for t in range(self.maxiter)
         
