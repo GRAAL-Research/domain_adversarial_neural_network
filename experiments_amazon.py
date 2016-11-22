@@ -5,17 +5,18 @@ from sklearn import svm
 
 
 def main():
-    data_folder = './data/' # where the datasets are
-    source_name = 'books'   # source domain: books, dvd, kitchen, or electronics
-    target_name = 'dvd'     # traget domain: books, dvd, kitchen, or electronics
+    data_folder = './data/'     # where the datasets are
+    source_name = 'dvd'         # source domain: books, dvd, kitchen, or electronics
+    target_name = 'electronics' # traget domain: books, dvd, kitchen, or electronics
+    adversarial = False          # set to False to learn a standard NN
 
-    lambda_adapt = 0.001
-    hidden_layer_size = 20
+    hidden_layer_size = 50
+    lambda_adapt = 0.1 if adversarial else 0.
     learning_rate = 0.001
     maxiter = 200
 
-    print("Loading data ...")
-    xs, ys, xt, _, xtest, ytest = load_amazon(source_name, target_name, data_folder)
+    print("Loading data...")
+    xs, ys, xt, _, xtest, ytest = load_amazon(source_name, target_name, data_folder, verbose=True)
 
     nb_valid = int(0.1 * len(ys))
     xv, yv = xs[-nb_valid:, :], ys[-nb_valid:]
@@ -23,7 +24,7 @@ def main():
 
     print("Fit...")
     algo = DANN(lambda_adapt=lambda_adapt, hidden_layer_size=hidden_layer_size, learning_rate=learning_rate,
-                maxiter=maxiter, epsilon_init=None, seed=12342, verbose=True)
+                maxiter=maxiter, epsilon_init=None, seed=12342, adversarial_representation=adversarial, verbose=True)
     algo.fit(xs, ys, xt, xv, yv)
 
     print("Predict...")
@@ -37,17 +38,18 @@ def main():
 
     print('==================================================================')
 
-    print('Computing PAD on original data...')
-    pad_original = compute_proxy_distance(xs, xt, verbose=True)
-
     print('Computing PAD on DANN representation...')
     pad_dann = compute_proxy_distance(algo.hidden_representation(xs), algo.hidden_representation(xt), verbose=True)
-
-    print('PAD on original data       = %f' % pad_original)
     print('PAD on DANN representation = %f' % pad_dann)
 
+    print('==================================================================')
 
-def load_amazon(source_name, target_name, data_folder=None):
+    print('Computing PAD on original data...')
+    pad_original = compute_proxy_distance(xs, xt, verbose=True)
+    print('PAD on original data = %f' % pad_original)
+
+
+def load_amazon(source_name, target_name, data_folder=None, verbose=False):
     """
     Load the amazon sentiment datasets from svmlight format files
     inputs:
@@ -69,6 +71,11 @@ def load_amazon(source_name, target_name, data_folder=None):
     source_file = data_folder + source_name + '_train.svmlight'
     target_file = data_folder + target_name + '_train.svmlight'
     test_file = data_folder + target_name + '_test.svmlight'
+
+    if verbose:
+        print('source file:', source_file)
+        print('target file:', target_file)
+        print('test file:  ', test_file)
 
     xs, ys, xt, yt, xtest, ytest = load_svmlight_files([source_file, target_file, test_file])
 
@@ -109,9 +116,7 @@ def compute_proxy_distance(source_X, target_X, verbose=False):
         test_risk = np.mean(clf.predict(test_X) != test_Y)
 
         if verbose:
-            print('--------- [ C =', C, '] ---------')
-            print('PAD train risk: ', train_risk)
-            print('PAD test risk:  ', test_risk)
+            print('[ PAD C = %f ] train risk: %f  test risk: %f' % (C, train_risk, test_risk))
 
         if test_risk > .5:
             test_risk = 1. - test_risk
