@@ -1,6 +1,17 @@
 import numpy as np
 
-def mDA(X, noise, eta):
+
+def compute_msda_representation(x_source, x_target, x_test):
+    nb_souce = np.shape(x_source)[0]
+    x_train = np.vstack((x_source, x_target))
+    new_x_train, W = msda_fit(x_train.T)
+    mew_x_source = new_x_train[:,:nb_souce].T
+    new_x_target = new_x_train[:,nb_souce:].T
+    new_x_test = msda_forward(x_test.T, W).T
+    return mew_x_source, new_x_target, new_x_test
+
+
+def mda_fit(X, noise=0.5, eta=1e-5):
     """
     inputs: 
         X : d x n input (Transpose of the usual data-matrix)
@@ -33,13 +44,13 @@ def mDA(X, noise, eta):
     # final W = P*Q^-1, dx(d+1)
     reg = eta * np.eye(d+1)
     reg[-1,-1] = 0
-    W = np.linalg.solve( Q.T+reg, P.T ).T
+    W = np.linalg.solve(Q.T + reg, P.T).T
 
-    hx = np.tanh( np.dot(W, Xb) )
+    hx = np.tanh(np.dot(W, Xb))
     return hx, W
 
    
-def mSDA(X, noise, nb_layers, verbose=False):
+def msda_fit(X, noise=0.5, nb_layers=5, verbose=False):
     """
     inputs:
         X : d x n input Transpose of the usual data-matrix)
@@ -57,7 +68,7 @@ def mSDA(X, noise, nb_layers, verbose=False):
     
     for i in range(nb_layers):
         if verbose: print('layer =', i)
-        newhx, W = mDA(prevhx, noise, eta)
+        newhx, W = mda_fit(prevhx, noise, eta)
         W_list.append(W)
         allhx = np.vstack((allhx, newhx))
         prevhx = newhx
@@ -65,7 +76,7 @@ def mSDA(X, noise, nb_layers, verbose=False):
     return allhx, W_list
 
 
-def mSDA_forward(X, W_list):
+def msda_forward(X, W_list):
     """
     inputs: 
         X : d x n input (Transpose of the usual data-matrix)

@@ -1,5 +1,6 @@
 import numpy as np
 from DANN import DANN
+from mSDA import compute_msda_representation
 from sklearn.datasets import load_svmlight_files
 from sklearn import svm
 
@@ -9,14 +10,32 @@ def main():
     source_name = 'dvd'         # source domain: books, dvd, kitchen, or electronics
     target_name = 'electronics' # traget domain: books, dvd, kitchen, or electronics
     adversarial = False          # set to False to learn a standard NN
+    msda = True
 
     hidden_layer_size = 50
     lambda_adapt = 0.1 if adversarial else 0.
-    learning_rate = 0.001
+    learning_rate = 0.001 if not msda else 0.0001
     maxiter = 200
 
     print("Loading data...")
     xs, ys, xt, _, xtest, ytest = load_amazon(source_name, target_name, data_folder, verbose=True)
+
+    if msda:
+        xs_path, xt_path, xtest_path = ['%s/%s.%s_%s_msda.npy' % (data_folder, source_name, target_name, E)
+                                        for E in ('source', 'target', 'test')]
+        try:
+            xs_msda = np.load(xs_path)
+            xt_msda = np.load(xt_path)
+            xtest_msda = np.load(xtest_path)
+            print('mSDA representations loaded from disk')
+        except:
+            print('Computing mSDA representations...')
+            xs_msda, xt_msda, xtest_msda = compute_msda_representation(xs, xt, xtest)
+            np.save(xs_path, xs_msda)
+            np.save(xt_path, xt_msda)
+            np.save(xtest_path, xtest_msda)
+
+        xs, xt, xtest = xs_msda, xt_msda, xtest_msda
 
     nb_valid = int(0.1 * len(ys))
     xv, yv = xs[-nb_valid:, :], ys[-nb_valid:]
