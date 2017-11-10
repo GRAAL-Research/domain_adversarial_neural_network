@@ -125,8 +125,7 @@ class DANN(object):
                         delta_W += tmp.reshape(-1,1) * x_t.reshape(1,-1)
                     
                     # add domain adaptation regularizer from other domain
-                    t_2 = np.random.randint(nb_examples_adapt)
-                    i_2 = t_2 % nb_examples_adapt
+                    i_2 = np.random.randint(nb_examples_adapt)
                     x_t_2 = X_adapt[i_2, :]
                     hidden_layer_2 = self.sigmoid( np.dot(W, x_t_2) + b)
                     gho_x_t_2 = self.sigmoid(np.dot(U.T, hidden_layer_2) + d) 
